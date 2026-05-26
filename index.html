@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RH1 Supply Mapper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand-mark">RH1</div>
+        <div>
+          <h1>Supply Mapper</h1>
+          <p>Map Excel/CSV เป็น MS · MD · GS และตรวจ RH1 Crisis Database v2.1</p>
+        </div>
+        <div class="top-actions">
+          <button id="sampleBtn" class="ghost">โหลดตัวอย่าง</button>
+          <button id="resetBtn" class="ghost">เริ่มใหม่</button>
+        </div>
+      </header>
+
+      <section class="panel hero">
+        <div>
+          <h2>อัปโหลดรายการวัสดุของโรงพยาบาล</h2>
+          <p>ระบบตรวจจับคอลัมน์ชื่อสินค้า รายละเอียด/spec หน่วยนับ Local Code และ master_code/mapped_code อัตโนมัติ แล้วเทียบกับ MasterCode STSG/SP/MS และ RH1 Crisis Database</p>
+        </div>
+        <label id="dropzone" class="dropzone">
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,text/csv" />
+          <span class="upload-icon">↑</span>
+          <strong>ลากไฟล์มาวาง หรือคลิกเพื่อเลือกไฟล์</strong>
+          <small>รองรับ .xlsx .xls .csv · อ่านรายละเอียด/spec เพื่อช่วย map · master_code เป็น optional</small>
+        </label>
+      </section>
+
+      <section class="grid two">
+        <div class="panel lookup">
+          <div class="section-title">
+            <h2>Quick Lookup</h2>
+            <span>ค้นหารายการเดี่ยว</span>
+          </div>
+          <div class="lookup-row">
+            <input id="lookupInput" placeholder="เช่น N95 ไม่มีวาล์ว, AED, ถุงมือไนไตร, Needle 22G" />
+            <button id="lookupBtn">ค้นหา</button>
+          </div>
+          <div id="lookupResult" class="lookup-result muted">พิมพ์ชื่อสินค้าแล้วกดค้นหา</div>
+        </div>
+
+        <div class="panel summary">
+          <div class="section-title">
+            <h2>สรุปผล</h2>
+            <span id="fileName">ยังไม่ได้อัปโหลดไฟล์</span>
+          </div>
+          <div id="stats" class="stats"></div>
+        </div>
+      </section>
+
+      <section id="importPanel" class="panel import-panel hidden">
+        <div class="section-title">
+          <div>
+            <h2>ตรวจสอบก่อน Upload to Dashboard</h2>
+            <span>ส่งเฉพาะรายการ High/Medium Conf ที่ข้อมูลผ่าน validation; Low Conf ต้องแก้หรือยืนยัน mapping ก่อน</span>
+          </div>
+        </div>
+        <div class="import-grid">
+          <label>
+            Dashboard API endpoint
+            <input id="apiEndpoint" value="https://rh1inventory.lpho.go.th/api/import/rh1-mapped-inventory" />
+          </label>
+          <label>
+            Crosswalk API endpoint
+            <input id="crosswalkEndpoint" value="https://rh1inventory.lpho.go.th/api/mapping-crosswalk" />
+          </label>
+          <label>
+            Hospital ID
+            <input id="hospitalId" placeholder="เช่น SNS หรือรหัสหน่วยบริการ" />
+          </label>
+          <button id="uploadDashboardBtn" class="upload-dashboard">Upload to Dashboard</button>
+        </div>
+        <div id="importSummary" class="import-summary"></div>
+        <div id="uploadStatus" class="upload-status muted">ยังไม่ได้ส่งข้อมูลเข้า dashboard</div>
+      </section>
+
+      <section id="resultsPanel" class="panel results hidden">
+        <div class="toolbar">
+          <div class="filter-stack">
+            <div class="tabs prefix-tabs" id="prefixTabs"></div>
+            <div class="tabs" id="tabs"></div>
+          </div>
+          <input id="searchInput" class="search" placeholder="ค้นหาในผลลัพธ์..." />
+          <button id="exportBtn">Export Excel</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>ชื่อสินค้า</th>
+                <th>Local Code</th>
+                <th>หน่วย</th>
+                <th>Prefix</th>
+                <th>Suggested Code</th>
+                <th>Spec</th>
+                <th>Spec Hint</th>
+                <th>STSG/Group</th>
+                <th>Group</th>
+                <th>Balance</th>
+                <th>Usage</th>
+                <th>Status</th>
+                <th>Leadtime</th>
+                <th>Confidence</th>
+                <th>RH1 Crisis</th>
+                <th>ภาวะวิกฤต</th>
+                <th>Validation</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div id="editModal" class="modal hidden">
+        <div class="modal-card">
+          <div class="section-title">
+            <div>
+              <h2>แก้ไข Low Conf ทีละรายการ</h2>
+              <span id="editRowLabel">เลือกแถวจากตาราง</span>
+            </div>
+            <button id="closeEditBtn" class="icon-btn" aria-label="ปิด">×</button>
+          </div>
+          <div class="edit-grid">
+            <label>
+              ชื่อสินค้าที่ต้องการเช็คใหม่
+              <textarea id="editNameInput" rows="3"></textarea>
+            </label>
+            <label>
+              Master Code / Suggested Code
+              <input id="manualCodeInput" placeholder="เช่น MS-0131-25A, MD-02-35172, GS-07-47131600" />
+            </label>
+          </div>
+          <div class="selector-grid">
+            <label>
+              ระบบ
+              <select id="systemSelect"></select>
+            </label>
+            <label>
+              กลุ่มหลัก / หมวด
+              <select id="majorGroupSelect"></select>
+            </label>
+            <label>
+              กลุ่มย่อย / รายการมาตรฐาน
+              <select id="subGroupSelect"></select>
+            </label>
+          </div>
+          <div id="editPreview" class="edit-preview muted">กรอกชื่อใหม่หรือ Master Code แล้วกดเช็ค</div>
+          <div class="modal-actions">
+            <button id="checkEditedNameBtn" class="ghost-light">เช็คจากชื่อใหม่</button>
+            <button id="useManualCodeBtn" class="ghost-light">ใช้ code นี้</button>
+            <button id="saveEditBtn" class="upload-dashboard">บันทึกและย้ายออกจาก Low</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="rh1Modal" class="modal hidden">
+        <div class="modal-card crisis-modal-card">
+          <div class="section-title">
+            <div>
+              <h2>แก้ไข RH1 Crisis</h2>
+              <span id="rh1RowLabel">เลือกแถวจากตาราง</span>
+            </div>
+            <button id="closeRh1Btn" class="icon-btn" aria-label="ปิด">×</button>
+          </div>
+          <div class="rh1-product-card">
+            <b id="rh1ProductName">-</b>
+            <span id="rh1ProductMeta" class="muted">-</span>
+            <div id="rh1CurrentInfo" class="muted">Auto ตามฐาน RH1</div>
+          </div>
+          <div class="crisis-edit-grid">
+            <label>
+              สถานะ RH1 Crisis
+              <select id="rh1OverrideSelect">
+                <option value="auto">Auto ตามฐาน RH1</option>
+                <option value="yes">ใช่ เป็น RH1 Crisis</option>
+                <option value="no">ไม่ใช่ RH1 Crisis</option>
+              </select>
+            </label>
+            <div>
+              <div class="field-label">ภาวะวิกฤต</div>
+              <div id="rh1ScenarioChecks" class="scenario-checks"></div>
+            </div>
+          </div>
+          <div id="rh1Preview" class="edit-preview muted">ตรวจสอบสถานะ RH1 ก่อนบันทึก</div>
+          <div class="modal-actions">
+            <button id="saveRh1Btn" class="upload-dashboard">บันทึก RH1 Crisis</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
