@@ -1,6 +1,6 @@
 # RH1 Mapping Import Integration Guide
 
-เอกสารนี้สำหรับทีมพัฒนา Dashboard หรือ AI agent ที่จะนำ RH1 Mapping App ไปต่อเข้ากับเว็บ `rh1inventory.lpho.go.th` เพื่อให้โรงพยาบาลอัปโหลด Excel/CSV ได้หลาย template แล้วส่งข้อมูลที่ map เป็นรหัสกลาง `MS / MD / GS` เข้า Dashboard โดยตรง
+เอกสารนี้สำหรับทีมพัฒนา Dashboard หรือ AI agent ที่จะนำ RH1 Mapping App ไปต่อเข้ากับเว็บ `rh1inventory.lpho.go.th` หรือเวปอื่นที่สนใจการพัฒนา code มาตรฐาน เพื่อให้โรงพยาบาลหรือหน่วยงานอัปโหลด Excel/CSV ได้หลาย template แล้วส่งข้อมูลที่ map เป็นรหัสกลาง `MS / MD / GS` เข้า Dashboard โดยตรง
 
 ## 1. เป้าหมาย
 
