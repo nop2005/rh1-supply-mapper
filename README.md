@@ -12,3 +12,4 @@
 4. กด `Export CSV` เพื่อดาวน์โหลดผลลัพธ์
 
 หมายเหตุ: การอ่าน Excel ใช้ SheetJS จาก CDN (`cdn.jsdelivr.net`) ถ้าเครื่องไม่มีอินเทอร์เน็ตจะยังอ่าน CSV ได้ตามปกติ
+หลักการ Mapping อ้างอิงตามมาตรฐาน https://docs.google.com/spreadsheets/d/1LJjvPOhNI1Qbp4383xmLwRrUOR_ekIqB/edit?usp=sharing&ouid=108186471414789609480&rtpof=true&sd=true 
